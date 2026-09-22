@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Ein persönlicher Geburtstagsgutschein für ein Wochenende zu zweit in den Maasduinen.">
+  <title>Dein Geburtstags-Wochenende</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <style>
+    :root {
+      --cream: #fbf7f0;
+      --paper: #fffdf9;
+      --rose: #d98b91;
+      --rose-light: #f3d9d8;
+      --burgundy: #681f32;
+      --burgundy-dark: #40101d;
+      --sage: #718270;
+      --sage-light: #dfe5da;
+      --ink: #2d2926;
+      --muted: #6f6863;
+      --line: rgba(64, 16, 29, 0.14);
+      --shadow: 0 24px 70px rgba(68, 42, 35, 0.13);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 18%, rgba(217, 139, 145, 0.17), transparent 27rem),
+        linear-gradient(180deg, #f7eee6 0, var(--cream) 28rem, #f7f3ea 100%);
+      font-family: "DM Sans", sans-serif;
+      line-height: 1.6;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      opacity: 0.28;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90' viewBox='0 0 90 90'%3E%3Cpath d='M0 45h90M45 0v90' stroke='%23681f32' stroke-opacity='.05' stroke-width='.7'/%3E%3C/svg%3E");
+    }
+    img { display: block; max-width: 100%; }
+    button, a { font: inherit; }
+    a { color: inherit; }
+    button { cursor: pointer; }
+    :focus-visible { outline: 3px solid var(--rose); outline-offset: 4px; }
+
+    .shell { width: min(1160px, calc(100% - 40px)); margin-inline: auto; }
+    .eyebrow {
+      margin: 0 0 12px;
+      color: var(--burgundy);
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3 { font-family: "Playfair Display", serif; line-height: 1.08; }
+    h2 { margin: 0; color: var(--burgundy-dark); font-size: clamp(2rem, 5vw, 3.5rem); }
+    .section-head { max-width: 690px; margin-bottom: 38px; }
+    .section-head p:last-child { color: var(--muted); font-size: 1.02rem; }
+    .section { padding: 86px 0; }
+
+    .hero {
+      min-height: min(860px, 94svh);
+      position: relative;
+      display: grid;
+      align-items: end;
+      overflow: hidden;
+      color: white;
+      background: var(--burgundy-dark) url("cover_Maasduinen_Tiny_House_2_7.jpg") center 52% / cover no-repeat;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(31, 15, 14, 0.06) 20%, rgba(34, 15, 18, 0.3) 56%, rgba(31, 11, 18, 0.9) 100%);
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 20px;
+      border: 1px solid rgba(255,255,255,0.36);
+      pointer-events: none;
+    }
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      padding: 130px 0 74px;
+      animation: rise 900ms cubic-bezier(.2,.7,.2,1) both;
+    }
+    .hero .eyebrow {
+      display: inline-block;
+      padding: 4px 9px;
+      border-left: 3px solid var(--rose-light);
+      background: rgba(64, 16, 29, 0.86);
+      color: white;
+    }
+      .hero-date {
+        margin: 0 0 10px;
+        color: #fff8f3;
+        font-family: "Playfair Display", serif;
+        font-size: clamp(1.25rem, 2.5vw, 1.7rem);
+        font-weight: 600;
+      }
+    h1 {
+      max-width: 880px;
+      margin: 0 0 22px;
+      font-size: clamp(3.1rem, 8vw, 6.8rem);
+      letter-spacing: 0;
+      text-wrap: balance;
+    }
+    .hero-copy { max-width: 650px; margin: 0 0 30px; color: #f8eeec; font-size: clamp(1rem, 2vw, 1.25rem); }
+    .hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 52px;
+      padding: 0 22px;
+      border: 0;
+      border-radius: 4px;
+      background: var(--burgundy);
+      color: white;
+      font-weight: 700;
+      text-decoration: none;
+      box-shadow: 0 12px 30px rgba(64, 16, 29, 0.2);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+    }
+    .button:hover { transform: translateY(-2px); background: #7b2940; box-shadow: 0 16px 34px rgba(64, 16, 29, 0.25); }
+    .button-light { background: #fff8f3; color: var(--burgundy-dark); }
+    .button-light:hover { background: white; }
+    .button svg { width: 19px; height: 19px; stroke-width: 2; }
+    .hero-note { color: rgba(255,255,255,.75); font-size: .88rem; }
+
+    .reveal-band { position: relative; z-index: 3; margin-top: -22px; }
+    .voucher-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      background: var(--paper);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+    .metric { min-height: 154px; padding: 28px; border-right: 1px solid var(--line); transition: background 180ms ease; }
+    .metric:last-child { border-right: 0; }
+    .metric:hover { background: #fff7f4; }
+    .metric-icon { color: var(--sage); margin-bottom: 15px; }
+    .metric-icon svg { width: 25px; height: 25px; }
+    .metric-label { display: block; margin-bottom: 5px; color: var(--muted); font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+    .metric strong { display: block; color: var(--burgundy-dark); font-family: "Playfair Display", serif; font-size: 1.15rem; line-height: 1.3; }
+
+    .intro { padding-top: 96px; }
+    .intro-grid { display: grid; grid-template-columns: .85fr 1.15fr; gap: 70px; align-items: center; }
+    .portrait-frame { position: relative; padding: 0 34px 34px 0; }
+    .portrait-frame::after { content: ""; position: absolute; right: 0; bottom: 0; width: 72%; height: 72%; z-index: -1; background: var(--sage-light); }
+    .portrait-frame img { width: 100%; aspect-ratio: 4 / 4.5; object-fit: cover; box-shadow: var(--shadow); }
+    .intro-copy p:not(.eyebrow) { color: var(--muted); font-size: 1.08rem; }
+    .signature { margin-top: 28px; color: var(--burgundy); font-family: "Playfair Display", serif; font-size: 1.5rem; font-style: italic; }
+
+    .schedule { background: rgba(255,255,255,0.48); border-block: 1px solid var(--line); }
+    .day-tabs { display: inline-flex; margin: 30px 0; padding: 5px; background: var(--sage-light); border-radius: 5px; }
+    .day-tab { min-width: 170px; padding: 10px 18px; border: 0; border-radius: 3px; background: transparent; color: #4c5c4b; font-weight: 700; line-height: 1.25; }
+    .day-tab small { display: block; margin-top: 2px; font-size: .72rem; font-weight: 600; }
+    .day-tab[aria-selected="true"] { background: var(--paper); color: var(--burgundy); box-shadow: 0 4px 14px rgba(45,41,38,.1); }
+    .timeline-panel[hidden] { display: none; }
+    .timeline { position: relative; max-width: 870px; margin-left: 5px; }
+    .timeline::before { content: ""; position: absolute; left: 81px; top: 17px; bottom: 18px; width: 1px; background: var(--rose); }
+    .event { display: grid; grid-template-columns: 62px 1fr; gap: 40px; position: relative; padding: 0 0 36px; }
+    .event:last-child { padding-bottom: 0; }
+    .event::before { content: ""; position: absolute; left: 75px; top: 8px; width: 11px; height: 11px; border: 3px solid var(--paper); border-radius: 50%; background: var(--burgundy); box-shadow: 0 0 0 1px var(--rose); }
+    .event time { color: var(--burgundy); font-weight: 700; }
+    .event h3 { margin: 0 0 7px; color: var(--burgundy-dark); font-size: 1.45rem; }
+    .event p { margin: 0; color: var(--muted); }
+
+    .map-layout { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(260px, .7fr); min-height: 540px; background: var(--paper); border: 1px solid var(--line); box-shadow: var(--shadow); }
+    #map { min-height: 540px; z-index: 1; }
+    .map-list { display: flex; flex-direction: column; padding: 32px; }
+    .map-list h3 { margin: 0 0 22px; color: var(--burgundy-dark); font-size: 1.55rem; }
+    .place { padding: 20px 0; border-top: 1px solid var(--line); }
+    .place:first-of-type { border-top: 0; padding-top: 0; }
+    .place span { display: block; margin-bottom: 4px; color: var(--rose); font-size: .75rem; font-weight: 700; text-transform: uppercase; }
+    .place strong { display: block; line-height: 1.3; }
+    .place button { margin-top: 8px; padding: 0; border: 0; background: transparent; color: var(--sage); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+    .leaflet-popup-content-wrapper { border-radius: 4px; font-family: "DM Sans", sans-serif; }
+    .popup-title { display: block; margin-bottom: 7px; color: var(--burgundy); font-weight: 700; }
+    .popup-link { display: inline-block; color: #526451; font-weight: 700; }
+    .custom-pin { display: grid; width: 38px !important; height: 38px !important; margin: -19px 0 0 -19px !important; place-items: center; border: 3px solid white; border-radius: 50% 50% 50% 8%; background: var(--burgundy); color: white; box-shadow: 0 5px 16px rgba(64,16,29,.32); transform: rotate(-45deg); }
+    .custom-pin span { transform: rotate(45deg); font-size: 15px; font-weight: 700; }
+
+    .gallery { padding-top: 30px; }
+    .gallery-grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 270px; gap: 14px; }
+    .photo { position: relative; overflow: hidden; background: var(--sage-light); }
+    .photo:first-child { grid-column: span 2; }
+    .photo img { width: 100%; height: 100%; object-fit: cover; transition: transform 600ms cubic-bezier(.2,.7,.2,1); }
+    .photo:hover img { transform: scale(1.045); }
+    .photo figcaption { position: absolute; inset: auto 0 0; padding: 38px 18px 16px; color: white; font-weight: 700; background: linear-gradient(transparent, rgba(31,11,18,.78)); }
+
+    .love-note { padding: 90px 0; color: white; text-align: center; background: var(--burgundy-dark); }
+    .love-note .eyebrow { color: var(--rose-light); }
+    .love-note h2 { max-width: 800px; margin: 0 auto 18px; color: white; }
+    .love-note p { max-width: 650px; margin: 0 auto 30px; color: #ead9d9; font-size: 1.08rem; }
+    footer { padding: 25px 0; color: var(--muted); text-align: center; background: #f5eee7; font-size: .85rem; }
+
+    .gift-toast {
+      position: fixed;
+      left: 50%;
+      bottom: 26px;
+      z-index: 1000;
+      width: min(440px, calc(100% - 32px));
+      padding: 18px 22px;
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 5px;
+      background: var(--burgundy-dark);
+      color: white;
+      box-shadow: var(--shadow);
+      text-align: center;
+      opacity: 0;
+      transform: translate(-50%, 28px);
+      pointer-events: none;
+      transition: opacity 280ms ease, transform 280ms ease;
+    }
+    .gift-toast.show { opacity: 1; transform: translate(-50%, 0); }
+    .gift-toast strong { display: block; font-family: "Playfair Display", serif; font-size: 1.25rem; }
+
+    @keyframes rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+    @media (max-width: 900px) {
+      .voucher-strip { grid-template-columns: repeat(2, 1fr); }
+      .metric:nth-child(2) { border-right: 0; }
+      .metric:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+      .intro-grid { grid-template-columns: 1fr; gap: 46px; }
+      .portrait-frame { max-width: 620px; }
+      .map-layout { grid-template-columns: 1fr; }
+      #map { min-height: 430px; }
+      .gallery-grid { grid-template-columns: 1fr 1fr; grid-auto-rows: 270px; }
+      .photo:first-child { grid-column: 1 / 3; }
+    }
+    @media (max-width: 600px) {
+      .shell { width: min(100% - 28px, 1160px); }
+      .section { padding: 66px 0; }
+      .hero { min-height: 760px; background-position: 58% center; }
+      .hero::after { inset: 10px; }
+      .hero-content { padding-bottom: 56px; }
+      h1 { font-size: clamp(2.75rem, 14vw, 4.6rem); }
+      .hero-note { flex-basis: 100%; }
+      .reveal-band { margin-top: 0; }
+      .voucher-strip { grid-template-columns: 1fr; }
+      .metric { min-height: auto; padding: 22px; border-right: 0; border-bottom: 1px solid var(--line); }
+      .metric:nth-child(3) { border-bottom: 1px solid var(--line); }
+      .metric:last-child { border-bottom: 0; }
+      .intro { padding-top: 66px; }
+      .portrait-frame { padding: 0 18px 18px 0; }
+      .day-tabs { display: flex; }
+      .day-tab { min-width: 0; flex: 1; }
+      .timeline::before { left: 7px; }
+      .event { grid-template-columns: 1fr; gap: 4px; padding-left: 32px; }
+      .event::before { left: 1px; }
+      .event h3 { font-size: 1.3rem; }
+      .map-list { padding: 24px; }
+      #map { min-height: 380px; }
+      .gallery-grid { display: grid; grid-template-columns: 1fr; grid-auto-rows: 270px; }
+      .photo:first-child { grid-column: auto; }
+      .button { width: 100%; }
+    }
+
+    @media print {
+      @page { size: A4; margin: 14mm; }
+      body { background: white; color: #251e1e; }
+      body::before, .hero::after, .hero-actions, .hero-note, .map-section, .gallery, footer, .gift-toast, .day-tabs { display: none !important; }
+      .shell { width: 100%; }
+      .hero { min-height: 105mm; display: flex; align-items: end; break-after: avoid; background-position: center; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .hero::before { background: linear-gradient(transparent 15%, rgba(31,11,18,.88)); print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .hero-content { padding: 25mm 10mm 13mm; }
+      h1 { font-size: 35pt; }
+      .reveal-band { margin: 0; }
+      .voucher-strip { box-shadow: none; }
+      .metric { min-height: 32mm; padding: 5mm; }
+      .intro { padding: 14mm 0 8mm; }
+      .intro-grid { grid-template-columns: .7fr 1.3fr; gap: 10mm; }
+      .portrait-frame { padding: 0; }
+      .portrait-frame img { height: 86mm; box-shadow: none; }
+      .section { padding: 10mm 0; }
+      .section-head { margin-bottom: 5mm; }
+      h2 { font-size: 25pt; }
+      .schedule { border: 0; }
+      .timeline-panel[hidden] { display: block; margin-top: 8mm; }
+      .timeline-panel::before { content: attr(aria-label); display: block; margin-bottom: 4mm; color: var(--burgundy); font-family: "Playfair Display", serif; font-size: 18pt; font-weight: 700; }
+      .event { padding-bottom: 5mm; break-inside: avoid; }
+      .love-note { padding: 16mm 8mm; break-inside: avoid; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="shell hero-content">
+      <p class="eyebrow">Ein Gutschein nur für dich</p>
+        <p class="hero-date">31.10. – 01.11.</p>
+      <h1>Happy Birthday, Ingrun! Dein Geburtstags-Wochenende</h1>
+      <p class="hero-copy">Ein kinderfreies Wochenende voller Natur, Entspannung und echter Zeit zu zweit wartet auf uns in Nord-Limburg.</p>
+      <div class="hero-actions">
+        <button class="button button-light" id="unwrapButton" type="button">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 1 1 2.45-3c.7 1.45 2.05 3 2.05 3Zm0 0h4.5a2.5 2.5 0 1 0-2.45-3C13.35 5.45 12 7 12 7Z"/></svg>
+          Geschenk auspacken
+        </button>
+        <span class="hero-note">Wochenende zu zweit · Maasduinen &amp; Arcen</span>
+      </div>
+    </div>
+  </header>
+
+  <main id="gift">
+    <section class="reveal-band shell" aria-label="Reiseübersicht">
+      <div class="voucher-strip">
+        <article class="metric"><div class="metric-icon"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg></div><span class="metric-label">Unser Ziel</span><strong>EuroParcs Maasduinen, Limburg</strong></article>
+        <article class="metric"><div class="metric-icon"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><span class="metric-label">Fahrtzeit</span><strong>Nur ca. 45 Minuten ab Emmerich</strong></article>
+        <article class="metric"><div class="metric-icon"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m3 11 9-8 9 8M5 10v11h14V10M9 21v-6h6v6"/></svg></div><span class="metric-label">Unser Zuhause</span><strong>Modernes Tiny House für zwei</strong></article>
+        <article class="metric"><div class="metric-icon"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 21s-8-4.6-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.4-8 11-8 11Z"/></svg></div><span class="metric-label">Highlights</span><strong>Natur, Dinner &amp; Thermal-Wellness</strong></article>
+      </div>
+    </section>
+
+    <section class="section intro">
+      <div class="shell intro-grid">
+        <div class="portrait-frame"><img src="polaroid_Maasduinen_Tiny_House_2_1.jpg" alt="Gemütlicher Schlafboden in unserem Tiny House"></div>
+        <div class="intro-copy">
+          <p class="eyebrow">Unser kleines Abenteuer</p>
+          <h2>Zwei Tage, die nur uns gehören.</h2>
+          <p>Mitten im Grünen wartet ein gemütliches Tiny House mit Schlafempore, eigener Terrasse und gemeinschaftlichem Hot Tub auf uns. Draußen die Maasduinen, drinnen Ruhe, Nespresso und ganz viel Zeit.</p>
+          <p>Wir tauschen Alltag gegen Waldwege, Kerzenlicht, einen langen Sonntagsbrunch und wohlig warmes Thermalwasser.</p>
+          <div class="signature">Für dich, von Herzen.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section schedule" id="zeitplan">
+      <div class="shell">
+        <div class="section-head"><p class="eyebrow">Unser Reiseplan</p><h2>Vorfreude, Stunde für Stunde.</h2><p>Alles ist vorbereitet. Wir müssen nur noch losfahren und die gemeinsame Zeit genießen.</p></div>
+        <div class="day-tabs" role="tablist" aria-label="Reisetage">
+          <button class="day-tab" id="tab-saturday" type="button" role="tab" aria-selected="true" aria-controls="saturday"><span>Samstag · 31.10.</span><small>Tag 1</small></button>
+          <button class="day-tab" id="tab-sunday" type="button" role="tab" aria-selected="false" aria-controls="sunday"><span>Sonntag · 01.11.</span><small>Tag 2</small></button>
+        </div>
+        <div class="timeline-panel" id="saturday" role="tabpanel" aria-labelledby="tab-saturday" aria-label="Samstag · Tag 1">
+          <div class="timeline">
+            <article class="event"><time datetime="08:00">08:00</time><div><h3>Leinen los</h3><p>Kinder bei den Großeltern in Emmerich abgeben und ganz entspannt abreisen.</p></div></article>
+            <article class="event"><time datetime="10:30">10:30</time><div><h3>Naturerlebnis Maasduinen</h3><p>Fahrradtour oder Wanderung durch den Nationalpark, inklusive Kaffeepause am Reindersmeer.</p></div></article>
+            <article class="event"><time datetime="17:00">17:00</time><div><h3>Ankommen im Tiny House</h3><p>Einchecken bei EuroParcs Maasduinen, die kleine Auszeit beziehen und erst einmal durchatmen.</p></div></article>
+            <article class="event"><time datetime="18:30">18:30</time><div><h3>Geburtstags-Dinner</h3><p>Romantisches Abendessen und ein gemütlicher Ausklang in unserem Tiny House.</p></div></article>
+          </div>
+        </div>
+        <div class="timeline-panel" id="sunday" role="tabpanel" aria-labelledby="tab-sunday" aria-label="Sonntag · Tag 2" hidden>
+          <div class="timeline">
+            <article class="event"><time datetime="09:30">09:30</time><div><h3>Auschecken &amp; Sonntagsbrunch</h3><p>Den Check-out spätestens um 10:00 Uhr erledigen und anschließend ausgiebig im historischen Dorf Arcen brunchen.</p></div></article>
+            <article class="event"><time datetime="12:00">12:00</time><div><h3>Wellness pur</h3><p>Sauna, Thermalbecken und vollkommene Entspannung im Thermaalbad Arcen.</p></div></article>
+            <article class="event"><time datetime="16:30">16:30</time><div><h3>Entspannte Heimfahrt</h3><p>Zurück nach Emmerich und pünktlich um 18:00 Uhr unsere Kinder wieder in die Arme schließen.</p></div></article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section map-section" id="karte">
+      <div class="shell">
+        <div class="section-head"><p class="eyebrow">Unsere Orte</p><h2>Ein Wochenende in Nord-Limburg.</h2><p>Von Waldwegen bis Thermalwasser: Alle Stationen liegen nah beieinander.</p></div>
+        <div class="map-layout">
+          <div id="map" aria-label="Interaktive Karte unserer Reiseziele"></div>
+          <aside class="map-list">
+            <h3>Stationen</h3>
+            <div class="place"><span>Übernachten</span><strong>Tiny House · EuroParcs Maasduinen</strong><button type="button" data-place="0">Auf Karte zeigen</button></div>
+            <div class="place"><span>Natur erleben</span><strong>Nationalpark De Maasduinen</strong><button type="button" data-place="1">Auf Karte zeigen</button></div>
+            <div class="place"><span>Entspannen</span><strong>Thermaalbad Arcen</strong><button type="button" data-place="2">Auf Karte zeigen</button></div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="section gallery" aria-label="Eindrücke vom Wochenende">
+      <div class="shell">
+        <div class="section-head"><p class="eyebrow">Ein kleiner Vorgeschmack</p><h2>Darauf dürfen wir uns freuen.</h2></div>
+        <div class="gallery-grid">
+          <figure class="photo"><img src="images/tinyhouse.jpg" alt="Unser Tiny House" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1523217582562-09d0def993a6?auto=format&fit=crop&w=1200&q=85'"><figcaption>Unser Tiny House</figcaption></figure>
+          <figure class="photo"><img src="images/tinyhouse-wohnraum.jpg" alt="Heller Wohnraum mit Küche im Tiny House" onerror="this.onerror=null;this.src='images/tinyhouse.jpg'"><figcaption>Gemütlicher Wohnraum</figcaption></figure>
+          <figure class="photo"><img src="images/tinyhouse-schlafempore.jpg" alt="Schlafempore mit Doppelbett im Tiny House" onerror="this.onerror=null;this.src='images/tinyhouse.jpg'"><figcaption>Schlafen in luftiger Höhe</figcaption></figure>
+          <figure class="photo"><img src="images/maasduinen.jpg" alt="Nationalpark De Maasduinen" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=900&q=85'"><figcaption>De Maasduinen</figcaption></figure>
+          <figure class="photo"><img src="images/maasduinen-see.jpg" alt="See- und Heidelandschaft in den Maasduinen" onerror="this.onerror=null;this.src='images/maasduinen.jpg'"><figcaption>Weite Natur und stille Seen</figcaption></figure>
+          <figure class="photo"><img src="images/thermaalbad-arcen-pool.jpg" alt="Sprudelndes Außenbecken im Thermaalbad Arcen" onerror="this.onerror=null;this.src='images/wellness.jpg'"><figcaption>Warmes Außenbecken</figcaption></figure>
+          <figure class="photo"><img src="images/thermaalbad-arcen-eingang.jpg" alt="Eingangsbereich des Thermaalbads Arcen" onerror="this.onerror=null;this.src='images/wellness.jpg'"><figcaption>Thermaalbad Arcen</figcaption></figure>
+          <figure class="photo"><img src="images/thermaalbad-arcen-thermalbecken.jpg" alt="Dampfendes Thermalbecken in Arcen" onerror="this.onerror=null;this.src='images/wellness.jpg'"><figcaption>Entspannung im Thermalwasser</figcaption></figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="love-note">
+      <div class="shell">
+        <p class="eyebrow">Alles Liebe zum Geburtstag</p>
+        <h2>Ich liebe dich! Auf ein unvergessliches Wochenende zu zweit.</h2>
+        <p>Dieser Gutschein gilt für Ruhe, Abenteuer, gutes Essen, lange Gespräche und ganz viele schöne Erinnerungen mit dir.</p>
+        <button class="button button-light" type="button" onclick="window.print()">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z"/></svg>
+          Gutschein drucken
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <footer><div class="shell">Mit Liebe geplant · Für unser Wochenende in Limburg</div></footer>
+  <div class="gift-toast" id="giftToast" role="status" aria-live="polite"><strong>Der Gutschein gehört dir!</strong>Jetzt beginnt die Vorfreude auf unser Wochenende zu zweit.</div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <script>
+    const unwrapButton = document.getElementById("unwrapButton");
+    const giftToast = document.getElementById("giftToast");
+
+    unwrapButton.addEventListener("click", () => {
+      giftToast.classList.add("show");
+      if (typeof confetti === "function" && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        const colors = ["#681f32", "#d98b91", "#718270", "#f3d9d8", "#fff8f3"];
+        confetti({ particleCount: 90, spread: 75, origin: { x: 0.28, y: 0.72 }, colors });
+        confetti({ particleCount: 90, spread: 75, origin: { x: 0.72, y: 0.72 }, colors });
+      }
+      window.setTimeout(() => giftToast.classList.remove("show"), 4200);
+      window.setTimeout(() => document.getElementById("gift").scrollIntoView({ behavior: "smooth" }), 450);
+    });
+
+    const tabs = document.querySelectorAll('[role="tab"]');
+    tabs.forEach((tab) => tab.addEventListener("click", () => {
+      tabs.forEach((otherTab) => {
+        const selected = otherTab === tab;
+        otherTab.setAttribute("aria-selected", selected);
+        document.getElementById(otherTab.getAttribute("aria-controls")).hidden = !selected;
+      });
+    }));
+
+    const places = [
+      { name: "Tiny House · EuroParcs Maasduinen", detail: "Unser Tiny House", address: "Maalbekerweg 25, 5951 NS Belfeld", coords: [51.3088524, 6.1497249], maps: "https://maps.google.com/?q=Maalbekerweg+25,+5951+NS+Belfeld" },
+      { name: "Nationalpark De Maasduinen", detail: "Wanderung oder Fahrradtour", coords: [51.5201, 6.0825], maps: "https://maps.google.com/?q=Nationalpark+De+Maasduinen" },
+      { name: "Thermaalbad Arcen", detail: "Sauna und Thermalbecken", coords: [51.4722, 6.1963], maps: "https://maps.google.com/?q=Thermaalbad+Arcen" }
+    ];
+
+    if (typeof L !== "undefined") {
+      const map = L.map("map", { scrollWheelZoom: false }).setView([51.50, 6.18], 11);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      }).addTo(map);
+
+      const pin = L.divIcon({ className: "custom-pin", html: "<span>♥</span>", iconSize: [38, 38], iconAnchor: [19, 19], popupAnchor: [0, -20] });
+      const markers = places.map((place) => L.marker(place.coords, { icon: pin }).addTo(map).bindPopup(
+        `<strong class="popup-title">${place.name}</strong>${place.detail}${place.address ? `<br>${place.address}` : ""}<br><a class="popup-link" href="${place.maps}" target="_blank" rel="noopener">Route in Google Maps</a>`
+      ));
+      map.fitBounds(L.latLngBounds(places.map((place) => place.coords)), { padding: [45, 45], maxZoom: 11 });
+
+      document.querySelectorAll("[data-place]").forEach((button) => button.addEventListener("click", () => {
+        const index = Number(button.dataset.place);
+        map.flyTo(places[index].coords, 13, { duration: 1.2 });
+        markers[index].openPopup();
+      }));
+    }
+  </script>
+</body>
+</html>
